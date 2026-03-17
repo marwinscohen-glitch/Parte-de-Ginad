@@ -16,7 +16,8 @@ import {
   ChevronRight,
   FileText,
   CheckCircle2,
-  AlertCircle
+  AlertCircle,
+  RefreshCw
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -50,17 +51,16 @@ interface VehicleItem {
 // --- Constants ---
 
 const INITIAL_NOVELTIES: Novelty[] = [
-  { id: '1', count: { of: 0, sub: 2, pt: 3, aux: 1 }, description: 'Servicios', names: '' },
-  { id: '2', count: { of: 0, sub: 1, pt: 1, aux: 0 }, description: 'Excusa total', names: 'SI. Caro, PT Yairis' },
-  { id: '3', count: { of: 0, sub: 0, pt: 1, aux: 0 }, description: 'Licencia de maternidad', names: 'PT. Yohana' },
-  { id: '4', count: { of: 0, sub: 0, pt: 0, aux: 1 }, description: 'Hospitalizada', names: 'AUX. Selene' },
-  { id: '5', count: { of: 0, sub: 2, pt: 2, aux: 0 }, description: 'Apoyo', names: 'SI Brenda, SI Romero, PT Bello, PT Yeidis' },
-  { id: '6', count: { of: 0, sub: 1, pt: 0, aux: 0 }, description: 'Apoyo SEPRO', names: 'SI Mildreth' },
-  { id: '7', count: { of: 0, sub: 3, pt: 1, aux: 0 }, description: '', names: 'IT. Karol, SI. Carolina, SI. Aida, PT. Sindy' },
-  { id: '8', count: { of: 0, sub: 2, pt: 0, aux: 0 }, description: 'J5 y J5-1', names: 'IJ. León, SI. Conde' },
-  { id: '9', count: { of: 0, sub: 1, pt: 0, aux: 0 }, description: 'palito de caucho', names: 'SI. Heidy' },
-  { id: '10', count: { of: 0, sub: 1, pt: 0, aux: 2 }, description: 'relación general', names: '' },
-  { id: '11', count: { of: 0, sub: 0, pt: 1, aux: 0 }, description: 'retrasada', names: 'PP. Lina' },
+  { id: '1', count: { of: 0, sub: 5, pt: 3, aux: 0 }, description: 'Servicios', names: '' },
+  { id: '2', count: { of: 0, sub: 0, pt: 1, aux: 1 }, description: 'Excusa total', names: 'PT Yairis, AUX. Selene' },
+  { id: '3', count: { of: 0, sub: 0, pt: 1, aux: 0 }, description: 'Licencia maternidad', names: 'PT. Yohana' },
+  { id: '4', count: { of: 0, sub: 2, pt: 2, aux: 0 }, description: 'Permiso ascenso', names: 'SI. Brenda, SI. Romero, PT. Bello, PT. Yeidis' },
+  { id: '5', count: { of: 0, sub: 0, pt: 3, aux: 0 }, description: 'curso ascenso', names: 'PT. Diaz, PT. Torres, PT. Sindy' },
+  { id: '6', count: { of: 0, sub: 1, pt: 0, aux: 0 }, description: 'Apoyo SEPRO', names: 'SI. Mildreth' },
+  { id: '7', count: { of: 0, sub: 9, pt: 1, aux: 3 }, description: 'Franquicia', names: '' },
+  { id: '8', count: { of: 0, sub: 1, pt: 0, aux: 0 }, description: 'Apoyo GUPRO', names: 'SI. Cabarcas' },
+  { id: '9', count: { of: 0, sub: 0, pt: 1, aux: 0 }, description: 'permiso calamidad', names: 'PT. Cindy' },
+  { id: '10', count: { of: 0, sub: 1, pt: 0, aux: 0 }, description: 'Vacaciones', names: 'IJ Leon' },
 ];
 
 const INITIAL_RADIOS: RadioItem[] = [
@@ -127,13 +127,13 @@ const PersonnelInput = ({ label, count, onChange, disabled = false }: { label: s
 // --- Main App ---
 
 export default function App() {
-  const [date, setDate] = useState('06 de marzo del 2026');
+  const [date, setDate] = useState('17 de marzo del 2026');
   const [unit, setUnit] = useState('GINAD');
   
   const [fe, setFe] = useState<PersonnelCount>({ of: 0, sub: 24, pt: 16, aux: 5 });
-  const [fd, setFd] = useState<PersonnelCount>({ of: 0, sub: 10, pt: 4, aux: 3 });
-  const [formacion, setFormacion] = useState<PersonnelCount>({ of: 0, sub: 11, pt: 5, aux: 3 });
-  const [isAutoFd, setIsAutoFd] = useState(true);
+  const [fd, setFd] = useState<PersonnelCount>({ of: 0, sub: 16, pt: 8, aux: 2 });
+  const [formacion, setFormacion] = useState<PersonnelCount>({ of: 0, sub: 5, pt: 4, aux: 1 });
+  const [isAutoFd, setIsAutoFd] = useState(false);
   
   const [novelties, setNovelties] = useState<Novelty[]>(INITIAL_NOVELTIES);
   const [radios, setRadios] = useState<RadioItem[]>(INITIAL_RADIOS);
@@ -141,6 +141,7 @@ export default function App() {
   const [vehicles, setVehicles] = useState<VehicleItem[]>(INITIAL_VEHICLES);
 
   const [copied, setCopied] = useState(false);
+  const [showLogic, setShowLogic] = useState(false);
 
   // --- Automatic Calculation ---
   useEffect(() => {
@@ -210,10 +211,18 @@ export default function App() {
     report += `${formatCount(formacion)}\n\n`;
     
     report += `Novedades\n`;
+    const totalNovelties = novelties.reduce((acc, n) => ({
+      of: acc.of + n.count.of,
+      sub: acc.sub + n.count.sub,
+      pt: acc.pt + n.count.pt,
+      aux: acc.aux + n.count.aux,
+    }), { of: 0, sub: 0, pt: 0, aux: 0 });
+
     novelties.forEach(n => {
       const namesPart = n.names ? ` (${n.names})` : '';
       report += `${formatCount(n.count)} ${n.description}${namesPart}\n`;
     });
+    report += `Total Novedades: ${formatCount(totalNovelties)}\n`;
     
     report += `\n${radios.length.toString().padStart(2, '0')} *Radios de Comunicación*\n`;
     radios.forEach(r => {
@@ -240,18 +249,36 @@ export default function App() {
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const resetToUserData = () => {
+    setFe({ of: 0, sub: 24, pt: 16, aux: 5 });
+    setFd({ of: 0, sub: 16, pt: 8, aux: 2 });
+    setFormacion({ of: 0, sub: 5, pt: 4, aux: 1 });
+    setIsAutoFd(false);
+    setNovelties(INITIAL_NOVELTIES);
+    setRadios(INITIAL_RADIOS);
+  };
+
   return (
     <div className="min-h-screen bg-zinc-50 text-zinc-900 font-sans p-4 md:p-8">
       <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-8">
         
         {/* Left Column: Editor */}
         <div className="space-y-6">
-          <header className="flex flex-col gap-2">
-            <div className="flex items-center gap-3">
-              <div className="bg-zinc-900 text-white p-2 rounded-lg">
-                <FileText size={24} />
+          <header className="flex flex-col gap-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="bg-zinc-900 text-white p-2 rounded-lg">
+                  <FileText size={24} />
+                </div>
+                <h1 className="text-2xl font-bold tracking-tight">Reporte de Personal</h1>
               </div>
-              <h1 className="text-2xl font-bold tracking-tight">Reporte de Personal</h1>
+              <button 
+                onClick={resetToUserData}
+                className="px-3 py-1.5 bg-zinc-200 hover:bg-zinc-300 text-zinc-700 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-colors flex items-center gap-2"
+              >
+                <RefreshCw size={12} />
+                Cargar Datos del Usuario
+              </button>
             </div>
             <p className="text-zinc-500 text-sm">Gestiona el parte diario de la unidad {unit}.</p>
           </header>
@@ -260,6 +287,47 @@ export default function App() {
           <div className="grid grid-cols-2 gap-4">
             <InputField label="Fecha" value={date} onChange={setDate} placeholder="Ej: 06 de marzo del 2026" />
             <InputField label="Unidad" value={unit} onChange={setUnit} placeholder="Ej: GINAD" />
+          </div>
+
+          {/* Logic Explanation Toggle */}
+          <div className="bg-zinc-100 p-4 rounded-xl border border-zinc-200">
+            <button 
+              onClick={() => setShowLogic(!showLogic)}
+              className="flex items-center justify-between w-full text-xs font-bold uppercase tracking-widest text-zinc-500"
+            >
+              <div className="flex items-center gap-2">
+                <AlertCircle size={14} /> ¿Cómo se calcula el personal?
+              </div>
+              <ChevronRight size={14} className={`transition-transform ${showLogic ? 'rotate-90' : ''}`} />
+            </button>
+            <AnimatePresence>
+              {showLogic && (
+                <motion.div 
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: 'auto', opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  className="overflow-hidden"
+                >
+                  <div className="pt-3 space-y-3 text-xs text-zinc-600 leading-relaxed">
+                    <div className="p-3 bg-zinc-900 text-zinc-100 rounded-lg font-mono text-center">
+                      FE = FD + NOVEDADES
+                    </div>
+                    <p>
+                      <strong className="text-zinc-900">1. Fuerza Efectiva (FE):</strong> Es el total absoluto de personal.
+                    </p>
+                    <p>
+                      <strong className="text-zinc-900">2. Fuerza Disponible (FD):</strong> Personal apto y laborando. <span className="text-emerald-600 font-bold">La Formación hace parte de la FD</span> (son los que están en físico).
+                    </p>
+                    <p>
+                      <strong className="text-zinc-900">3. Novedades:</strong> Personal que resta a la FE (excusas, vacaciones, etc.).
+                    </p>
+                    <div className="p-2 border border-amber-200 bg-amber-50 rounded text-amber-800 italic">
+                      "La suma de los Disponibles (FD) más las Novedades debe ser igual a la Fuerza Efectiva (FE)."
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
 
           {/* Personnel Counts */}
@@ -453,26 +521,80 @@ export default function App() {
                 {generateReport()}
               </div>
 
-              <div className="mt-8 grid grid-cols-3 gap-4">
-                <div className="bg-zinc-800/30 p-4 rounded-xl border border-zinc-700/30">
-                  <div className="text-[10px] uppercase tracking-wider text-zinc-500 mb-1">Total FE</div>
-                  <div className="text-2xl font-bold text-white">
-                    {fe.of + fe.sub + fe.pt + fe.aux}
+              <div className="mt-8 space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="bg-zinc-800/30 p-4 rounded-xl border border-zinc-700/30">
+                    <div className="text-[10px] uppercase tracking-wider text-zinc-500 mb-1">Fuerza Efectiva (Total)</div>
+                    <div className="text-2xl font-bold text-white">
+                      {fe.of + fe.sub + fe.pt + fe.aux}
+                    </div>
+                  </div>
+                  <div className="bg-zinc-800/30 p-4 rounded-xl border border-zinc-700/30">
+                    <div className="text-[10px] uppercase tracking-wider text-zinc-500 mb-1">Fuerza Disponible</div>
+                    <div className="text-2xl font-bold text-emerald-400">
+                      {fd.of + fd.sub + fd.pt + fd.aux}
+                    </div>
                   </div>
                 </div>
-                <div className="bg-zinc-800/30 p-4 rounded-xl border border-zinc-700/30">
-                  <div className="text-[10px] uppercase tracking-wider text-zinc-500 mb-1">Total FD</div>
-                  <div className="text-2xl font-bold text-white">
-                    {fd.of + fd.sub + fd.pt + fd.aux}
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="bg-zinc-800/30 p-4 rounded-xl border border-zinc-700/30 border-l-2 border-l-red-500/50">
+                    <div className="text-[10px] uppercase tracking-wider text-zinc-500 mb-1">Novedades (Fuera de la Unidad)</div>
+                    <div className="text-xl font-bold text-red-400">
+                      {novelties.reduce((acc, n) => acc + n.count.of + n.count.sub + n.count.pt + n.count.aux, 0)}
+                    </div>
+                    <div className="text-[9px] text-zinc-500 mt-1 italic">Restan a la FE</div>
                   </div>
-                </div>
-                <div className="bg-zinc-800/30 p-4 rounded-xl border border-zinc-700/30">
-                  <div className="text-[10px] uppercase tracking-wider text-zinc-500 mb-1">Equipos</div>
-                  <div className="text-2xl font-bold text-white">
-                    {radios.length + motos.length + vehicles.length}
+                  <div className="bg-emerald-500/5 p-4 rounded-xl border border-emerald-500/20 border-l-2 border-l-emerald-500">
+                    <div className="text-[10px] uppercase tracking-wider text-emerald-500/70 mb-1">En Formación (Físico)</div>
+                    <div className="text-xl font-bold text-emerald-400">
+                      {formacion.of + formacion.sub + formacion.pt + formacion.aux}
+                    </div>
+                    <div className="text-[9px] text-emerald-600 mt-1 font-medium">Parte de la FD (Presentes)</div>
                   </div>
                 </div>
               </div>
+
+              {/* Validation Warning: Formacion > FD */}
+              {(formacion.of + formacion.sub + formacion.pt + formacion.aux) > (fd.of + fd.sub + fd.pt + fd.aux) && (
+                <div className="mt-4 p-3 bg-red-500/20 border border-red-500/50 rounded-xl flex items-center gap-3 text-red-200 text-xs">
+                  <AlertCircle size={16} className="shrink-0" />
+                  <p>Atención: El personal en <strong>formación</strong> supera a la <strong>fuerza disponible</strong>. Revisa las novedades.</p>
+                </div>
+              )}
+
+              {/* Validation Warning: FD mismatch */}
+              {!isAutoFd && (
+                (() => {
+                  const totalNov = novelties.reduce((acc, n) => ({
+                    of: acc.of + n.count.of,
+                    sub: acc.sub + n.count.sub,
+                    pt: acc.pt + n.count.pt,
+                    aux: acc.aux + n.count.aux,
+                  }), { of: 0, sub: 0, pt: 0, aux: 0 });
+                  
+                  const expectedFd = {
+                    of: fe.of - totalNov.of,
+                    sub: fe.sub - totalNov.sub,
+                    pt: fe.pt - totalNov.pt,
+                    aux: fe.aux - totalNov.aux,
+                  };
+
+                  if (fd.of !== expectedFd.of || fd.sub !== expectedFd.sub || fd.pt !== expectedFd.pt || fd.aux !== expectedFd.aux) {
+                    return (
+                      <div className="mt-4 p-3 bg-amber-500/20 border border-amber-500/50 rounded-xl flex items-center gap-3 text-amber-200 text-xs">
+                        <AlertCircle size={16} className="shrink-0" />
+                        <div>
+                          <p className="font-bold mb-1">Los números no cuadran:</p>
+                          <p>La suma de <strong>Disponibles (FD)</strong> + <strong>Novedades</strong> debe ser igual a la <strong>Fuerza Efectiva (FE)</strong>.</p>
+                          <p className="mt-1 opacity-70 italic text-[10px]">Revisa que no te sobren o falten personas en los conteos.</p>
+                        </div>
+                      </div>
+                    );
+                  }
+                  return null;
+                })()
+              )}
 
               <div className="mt-8 p-4 bg-zinc-800/20 rounded-xl border border-dashed border-zinc-700/50">
                 <p className="text-[11px] text-zinc-500 italic leading-relaxed">
